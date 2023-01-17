@@ -17,4 +17,9 @@ class UserDetail extends Model
         'gender',
         'image',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'id', 'user_id');
+    }
 }

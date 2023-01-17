@@ -8,14 +8,41 @@ use App\Models\UserDetail;
 use App\Http\Requests\CreateUserRequest;
 use App\Http\Requests\CreateUserDetailRequest;
 
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Support\Facades\Storage;
 
 
 
 class AuthController extends Controller
 {
+    public function login(Request $request)
+    {
+        $credentials = request(['email', 'password']);
+
+        if (! $token = auth()->attempt($credentials)) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $userData = [
+            'full_name' => Auth::user()->userDetail->first_name . ' ' . Auth::user()->userDetail->last_name,
+            'address' => Auth::user()->userDetail->address,
+            'gender' => Auth::user()->userDetail->gender,
+            'image' => url(Storage::url('image/'. Auth::user()->userDetail->image))
+        ];
+
+
+        return response()->json([
+            'user_data' => $userData,
+            'auth' => [
+                'token' => $token,
+                'type' => 'bearer'
+            ]
+        ], 200);
+    }
+
     public function register(Request $request)
     {
         try {
@@ -26,7 +53,10 @@ class AuthController extends Controller
 
             $validatedDetail = Validator::make($request->except(['email', 'phone_number', 'password', 'password_confirmation']), (new CreateUserDetailRequest)->rules());
             $validatedDetail = $validatedDetail->validate();
-            $validatedDetail['image'] = $request->file('image')->store('image');
+            $image = $request->file('image');
+            $image->storeAs('public/image/', $image->hashName());
+
+            $validatedDetail['image'] = $image->hashName();
 
             $storeUser = User::create($validatedUser);
             $validatedDetail['user_id'] = $storeUser->id;
