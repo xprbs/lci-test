@@ -91,4 +91,20 @@ class ProductController extends Controller
             return new ProductResource(false, 'Product gagal diupdate', $e->getMessage());
         }
     }
+
+    public function destroy(Product $product)
+    {
+        try {
+            Storage::delete('public/product/'.$product->image);
+            $product->delete();
+            return new ProductResource(true, 'Product berhasil dihapus!', null);
+        } catch (\Exception $e) {
+            return new ProductResource(true, 'Product gagal dihapus!', $e->getMessage());
+        }
+    }
+
+    public function show(Product $product)
+    {
+        return new ProductResource(true, 'Detail data product', $product);
+    }
 }
